@@ -10,19 +10,44 @@
 /**
 *@addtogroup 25LCXXXX_API
 * @{ <!-- BEGIN GROUP -->
+*
+* 	API functions for EEPROM device
 */
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
 // Includes
 ////////////////////////////////////////////////////////////////////////////////
-#include "stm32f7xx_hal.h"
 #include "25lcxxxx.h"
-
+#include "../../25lcxxxx_if.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * 	25LCxxxx/25AAxxxx Instruction Set
+ */
+typedef enum
+{
+	e25LCXXXX_ISA_READ		= 0x03U,		/**<Read data from memory array begging at selected address */
+	e25LCXXXX_ISA_WRITE		= 0x02U,		/**<Write data to memory array begging at selected address */
+	e25LCXXXX_ISA_WREN		= 0x06U,		/**<Set write enable latch - enable write operation */
+	e25LCXXXX_ISA_WRDI		= 0x04U,		/**<Reset write enable latch - disable write operation */
+	e25LCXXXX_ISA_RDST		= 0x05U,		/**<Read STATUS register */
+	e25LCXXXX_ISA_WDST		= 0x01U,		/**<Write STATUS register */
+
+	// Additional instructions for 25XX512 and 25XX11024
+
+	e25LCXXXX_ISA_PE		= 0x42U,		/**<Page erase - erase one page in memory array */
+	e25LCXXXX_ISA_SE		= 0xD8U,		/**<Sector erase - erase one sector in memory array */
+	e25LCXXXX_ISA_CE		= 0xC7U,		/**<Chip erase - erase all sectors in memory array */
+	e25LCXXXX_ISA_RDID		= 0xABU,		/**<Relase from Deep power-down and read electronic signature */
+	e25LCXXXX_ISA_DPD		= 0xB9U,		/**<Depp Power-down mode */
+
+} _25lcxxxx_isa_t;
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Variables
@@ -31,10 +56,81 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Function Prototypes
 ////////////////////////////////////////////////////////////////////////////////
+static _25lcxxxx_status_t _25lcxxxx_write_enable 	(void);
+static _25lcxxxx_status_t _25lcxxxx_read_status		();
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
 ////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Initialize EEPROM device
+*
+* @return 	status - Status of initialization
+*/
+////////////////////////////////////////////////////////////////////////////////
+_25lcxxxx_status_t _25lcxxxx_init(void)
+{
+	_25lcxxxx_status_t status = e25LCXXXX_OK;
+
+	// Initialize app interface
+	status = _25lcxxxx_if_init();
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Write byte(s) to EEPROM
+*
+* @param[in]	addr	- Start address of write
+* @param[in]	size	- Size of bytes to write
+* @param[in]	p_data	- Pointer to write data
+* @return 		status 	- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+_25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, const uint8_t * const p_data)
+{
+	_25lcxxxx_status_t status = e25LCXXXX_OK;
+
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Read byte(s) from EEPROM
+*
+* @param[in]	addr	- Start address of write
+* @param[in]	size	- Size of bytes to write
+* @param[out]	p_data	- Pointer to read data
+* @return 		status 	- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+_25lcxxxx_status_t _25lcxxxx_read(const uint32_t addr, const uint32_t size, uint8_t * const p_data)
+{
+	_25lcxxxx_status_t status = e25LCXXXX_OK;
+
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+* @} <!-- END GROUP -->
+*/
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*@addtogroup 25LCxxxx/25AAxxx
+* @{ <!-- BEGIN GROUP -->
+*
+* 	Kernel functions of SPI EEPROM device 25LCxxxx/25AAxxxx
+*/
+////////////////////////////////////////////////////////////////////////////////
+
 
 
 
@@ -43,4 +139,3 @@
 * @} <!-- END GROUP -->
 */
 ////////////////////////////////////////////////////////////////////////////////
-

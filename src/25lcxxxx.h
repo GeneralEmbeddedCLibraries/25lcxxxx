@@ -39,6 +39,8 @@ typedef enum
 ////////////////////////////////////////////////////////////////////////////////
 // Functions Prototypes
 ////////////////////////////////////////////////////////////////////////////////
-
+_25lcxxxx_status_t _25lcxxxx_init	(void);
+_25lcxxxx_status_t _25lcxxxx_write	(const uint32_t addr, const uint32_t size, const uint8_t * const p_data);
+_25lcxxxx_status_t _25lcxxxx_read	(const uint32_t addr, const uint32_t size, uint8_t * const p_data);
 
 #endif // _25LCXXXX_H_
