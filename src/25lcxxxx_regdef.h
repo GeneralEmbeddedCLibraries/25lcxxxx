@@ -58,12 +58,12 @@ typedef struct
 	uint8_t bp		: 2;	/**<Block protection */
 	uint8_t	res 	: 3;	/**<Reserved */
 	uint8_t wpen	: 1;	/**<Write Protect enable */
-} _25lcxxx_status_reg_bits_t;
+} _25lcxxxx_status_reg_bits_t;
 
 typedef union
 {
 	uint8_t u;						/**<Unsigned access */
-	_25lcxxx_status_reg_bits_t b;	/**<Bitfield access */
+	_25lcxxxx_status_reg_bits_t b;	/**<Bitfield access */
 } _25lcxxxx_status_reg_t;
 
 /**

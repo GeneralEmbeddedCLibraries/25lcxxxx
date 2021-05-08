@@ -129,7 +129,7 @@ static _25lcxxxx_status_t _25lcxxxx_write_enable(void)
 }
 
 
-static _25lcxxxx_status_t _25lcxxxx_write_disable 	(void)
+static _25lcxxxx_status_t _25lcxxxx_write_disable(void)
 {
 	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
 	const uint8_t		cmd		= e25LCXXXX_ISA_WRDI;
@@ -160,6 +160,63 @@ static _25lcxxxx_status_t _25lcxxxx_write_status(const _25lcxxxx_status_reg_t * 
 	status |= _25lcxxxx_if_transmit((uint8_t*) p_status_reg, 1, eSPI_CS_HIGH_ON_EXIT );
 
 	return status;
+}
+
+
+
+
+// TODO: Remove only testing
+
+static _25lcxxxx_status_reg_t g_status_reg = { .u = 0 };
+
+void _25lcxxxx_hndl_test(void)
+{
+	static cnt = 0;
+
+	switch (cnt)
+	{
+		case 0:
+			cnt++;
+
+			_25lcxxxx_read_status( &g_status_reg );
+
+			break;
+
+		case 1:
+			cnt++;
+
+			_25lcxxxx_write_enable();
+			break;
+
+		case 2:
+			cnt++;
+
+			_25lcxxxx_read_status( &g_status_reg );
+
+			break;
+
+		case 3:
+			cnt++;
+
+			_25lcxxxx_write_disable();
+			break;
+
+		case 4:
+			cnt ++;
+
+			_25lcxxxx_read_status( &g_status_reg );
+
+			break;
+
+		case 5:
+			cnt = 0;
+			break;
+
+		default:
+			break;
+	}
+
+
 }
 
 
