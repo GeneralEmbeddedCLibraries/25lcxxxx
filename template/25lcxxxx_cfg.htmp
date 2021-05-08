@@ -1,0 +1,65 @@
+////////////////////////////////////////////////////////////////////////////////
+/**
+*@file      25lcxxxx_cfg.h
+*@brief     Configuration for 25LCxxxx EEPROM device
+*@author    Ziga Miklosic
+*@date      08.05.2021
+*@version	V1.0.0
+*/
+////////////////////////////////////////////////////////////////////////////////
+/**
+*@addtogroup 25LCXXXX_CFG
+* @{ <!-- BEGIN GROUP -->
+*/
+////////////////////////////////////////////////////////////////////////////////
+
+#ifndef _25LCXXXX_CFG_H_
+#define _25LCXXXX_CFG_H_
+
+////////////////////////////////////////////////////////////////////////////////
+// Includes
+////////////////////////////////////////////////////////////////////////////////
+#include <stdint.h>
+#include "project_config.h"
+
+// Debug communication port
+#include "middleware/debug_comm_port/com_dbg.h"
+
+////////////////////////////////////////////////////////////////////////////////
+// Definitions
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * 	Enable/Disable debug mode
+ */
+#define _25LCXXXX_CFG_DEBUG_EN				( 1 )
+
+/**
+ * 	Enable/Disable assertions
+ */
+#define _25LCXXXX_CFG_ASSERT_EN				( 1 )
+
+
+
+
+/**
+ * 	Debug communication port macros
+ */
+#if ( 1 == _25LCXXXX_CFG_DEBUG_EN )
+	#define _25LCXXXX_DBG_PRINT( ... )					( com_dbg_print( eCOM_DBG_CH_ERR, (const char*) __VA_ARGS__ ))
+#else
+	#define _25LCXXXX_DBG_PRINT( ... )					{ ; }
+
+#endif
+
+/**
+ * 	 Assertion macros
+ */
+#if ( 1 == _25LCXXXX_CFG_ASSERT_EN )
+	#define _25LCXXXX_ASSERT(x)							PROJECT_CONFIG_ASSERT(x)
+#else
+	#define _25LCXXXX_ASSERT(x)							{ ; }
+#endif
+
+
+#endif // _25LCXXXX_CFG_H_
