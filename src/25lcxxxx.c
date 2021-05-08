@@ -40,8 +40,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Function Prototypes
 ////////////////////////////////////////////////////////////////////////////////
-static _25lcxxxx_status_t _25lcxxxx_write_enable 	(void);
-static _25lcxxxx_status_t _25lcxxxx_read_status		(_25lcxxxx_status_reg_t * const p_status);
+static _25lcxxxx_status_t _25lcxxxx_write_enable 		(void);
+static _25lcxxxx_status_t _25lcxxxx_write_disable 		(void);
+static _25lcxxxx_status_t _25lcxxxx_read_status			(_25lcxxxx_status_reg_t * const p_status_reg);
+static _25lcxxxx_status_t _25lcxxxx_write_status		(const _25lcxxxx_status_reg_t * const p_status_reg);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -116,6 +118,49 @@ _25lcxxxx_status_t _25lcxxxx_read(const uint32_t addr, const uint32_t size, uint
 ////////////////////////////////////////////////////////////////////////////////
 
 
+static _25lcxxxx_status_t _25lcxxxx_write_enable(void)
+{
+	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
+	const uint8_t		cmd		= e25LCXXXX_ISA_WREN;
+
+	status = _25lcxxxx_if_transmit( &cmd, 1, ( eSPI_CS_HIGH_ON_EXIT | eSPI_CS_LOW_ON_ENTRY ));
+
+	return status;
+}
+
+
+static _25lcxxxx_status_t _25lcxxxx_write_disable 	(void)
+{
+	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
+	const uint8_t		cmd		= e25LCXXXX_ISA_WRDI;
+
+	status = _25lcxxxx_if_transmit( &cmd, 1, ( eSPI_CS_HIGH_ON_EXIT | eSPI_CS_LOW_ON_ENTRY ));
+
+	return status;
+}
+
+
+static _25lcxxxx_status_t _25lcxxxx_read_status(_25lcxxxx_status_reg_t * const p_status_reg)
+{
+	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
+	const uint8_t		cmd		= e25LCXXXX_ISA_RDST;
+
+	status = _25lcxxxx_if_transmit( &cmd, 1, eSPI_CS_LOW_ON_ENTRY );
+	status |= _25lcxxxx_if_receive((uint8_t*) p_status_reg, 1, eSPI_CS_HIGH_ON_EXIT );
+
+	return status;
+}
+
+static _25lcxxxx_status_t _25lcxxxx_write_status(const _25lcxxxx_status_reg_t * const p_status_reg)
+{
+	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
+	const uint8_t		cmd		= e25LCXXXX_ISA_WDST;
+
+	status = _25lcxxxx_if_transmit( &cmd, 1, eSPI_CS_LOW_ON_ENTRY );
+	status |= _25lcxxxx_if_transmit((uint8_t*) p_status_reg, 1, eSPI_CS_HIGH_ON_EXIT );
+
+	return status;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
