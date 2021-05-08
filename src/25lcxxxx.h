@@ -34,6 +34,7 @@ typedef enum
 	e25LCXXXX_OK			= 0,		/**<Normal operation */
 	e25LCXXXX_ERROR_SPI		= 0x01,		/**<SPI error */
 	e25LCXXXX_ERROR_INIT	= 0x02,		/**<Initialisation error */
+	e25LCXXXX_ERROR_ADDR	= 0x04,		/**<Invalid memory address */
 } _25lcxxxx_status_t;
 
 ////////////////////////////////////////////////////////////////////////////////

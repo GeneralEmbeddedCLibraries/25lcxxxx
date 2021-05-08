@@ -21,6 +21,7 @@
 #include "25lcxxxx.h"
 #include "25lcxxxx_regdef.h"
 #include "../../25lcxxxx_if.h"
+#include "../../25lcxxxx_cfg.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,6 +37,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Variables
 ////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * 	Initialization guard
+ */
+static bool gb_is_init = false;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Function Prototypes
@@ -63,6 +69,14 @@ _25lcxxxx_status_t _25lcxxxx_init(void)
 	// Initialize app interface
 	status = _25lcxxxx_if_init();
 
+	// Enable write latch
+	status |= _25lcxxxx_write_enable();
+
+	if ( e25LCXXXX_OK == status )
+	{
+		gb_is_init = true;
+	}
+
 	return status;
 }
 
@@ -80,6 +94,18 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 {
 	_25lcxxxx_status_t status = e25LCXXXX_OK;
 
+	// Check for init
+	_25LCXXXX_ASSERT( true == gb_is_init );
+
+	// Check address boundary
+	if (( addr + size ) <=  _25LCXXXX_MAX_ADDR )
+	{
+
+	}
+	else
+	{
+		status = e25LCXXXX_ERROR_ADDR;
+	}
 
 	return status;
 }
@@ -97,6 +123,19 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 _25lcxxxx_status_t _25lcxxxx_read(const uint32_t addr, const uint32_t size, uint8_t * const p_data)
 {
 	_25lcxxxx_status_t status = e25LCXXXX_OK;
+
+	// Check for init
+	_25LCXXXX_ASSERT( true == gb_is_init );
+
+	// Check address boundary
+	if (( addr + size ) <=  _25LCXXXX_MAX_ADDR )
+	{
+
+	}
+	else
+	{
+		status = e25LCXXXX_ERROR_ADDR;
+	}
 
 
 	return status;
