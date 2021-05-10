@@ -66,6 +66,7 @@ static _25lcxxxx_status_t 	_25lcxxxx_write_status			(const _25lcxxxx_status_reg_
 static _25lcxxxx_status_t 	_25lcxxxx_read_command			(const uint32_t addr);
 static _25lcxxxx_status_t 	_25lcxxxx_write_command			(const uint32_t addr);
 static void 				_25lcxxxx_assemble_rw_cmd		(_25lcxxxx_rw_cmd_t * const p_frame, const _25lcxxxx_isa_t rw_cmd, const uint32_t addr);
+static uint32_t 			_25lcxxxx_get_number_of_sectors	(const uint32_t addr, const uint32_t size);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -123,20 +124,22 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 	if (( addr + size ) <= _25LCXXXX_MAX_ADDR )
 	{
 		// Calculate how many sectors takes write request
-		const uint32_t sector_num = _25lcxxxx_get_number_of_sectors( addr, size );
+		const uint32_t num_of_sectors = _25lcxxxx_get_number_of_sectors( addr, size );
 
 		// Write to all sectors
-		for ( i = 0; i < sector_num; i++ )
+		for (uint32_t i = 0; i < num_of_sectors; i++ )
 		{
 			// Calculate how many bytes till page boundary
-			//bytes_till_boundary = 0;
+			uint8_t bytes_till_boundary = 0;
 
 			// Calculate new address
+			working_addr = 0;
 
-			//
+			// Send write command
 			status = _25lcxxxx_write_command( working_addr );
-			status |= _25lcxxxx_if_transmit( p_data, bytes_till_boundary, eSPI_CS_HIGH_ON_EXIT );
 
+			// Send data payload
+			status |= _25lcxxxx_if_transmit( p_data, bytes_till_boundary, eSPI_CS_HIGH_ON_EXIT );
 		}
 	}
 	else
@@ -269,12 +272,14 @@ static void _25lcxxxx_assemble_rw_cmd(_25lcxxxx_rw_cmd_t * const p_frame, const 
 
 static _25lcxxxx_status_t _25lcxxxx_write_command(const uint32_t addr)
 {
-	_25lcxxxx_status_t 		status 	= e25LCXXXX_OK;
-	_25lcxxxx_rw_cmd_t		cmd		= { .u = 0 };
+	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
+	_25lcxxxx_rw_cmd_t	cmd		= { .u = 0 };
 
 	// Assemble command
 	_25lcxxxx_assemble_rw_cmd( &cmd, e25LCXXXX_ISA_WRITE, addr );
 
+	// Send command
+	// NOTE: Based on number of address bits command is being divided!
 	#if ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 8)
 		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
 
@@ -283,7 +288,11 @@ static _25lcxxxx_status_t _25lcxxxx_write_command(const uint32_t addr)
 		// 9 bit address specialty
 		if (( addr & 0x100U ) == 0x100U )
 		{
-			cmd.cmd |= ( 1U << 4U );
+			cmd.field.cmd |= ( 0x80U );
+		}
+		else
+		{
+			cmd.field.cmd &= ~( 0x80U );
 		}
 
 		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
@@ -309,6 +318,8 @@ static _25lcxxxx_status_t _25lcxxxx_read_command(const uint32_t addr)
 	// Assemble command
 	_25lcxxxx_assemble_rw_cmd( &cmd, e25LCXXXX_ISA_READ, addr );
 
+	// Send command
+	// NOTE: Based on number of address bits command is being divided!
 	#if ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 8)
 		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
 
@@ -317,7 +328,11 @@ static _25lcxxxx_status_t _25lcxxxx_read_command(const uint32_t addr)
 		// 9 bit address specialty
 		if (( addr & 0x100U ) == 0x100U )
 		{
-			cmd.cmd |= ( 1U << 4U );
+			cmd.field.cmd |= ( 0x80U );
+		}
+		else
+		{
+			cmd.field.cmd &= ~( 0x80U );
 		}
 
 		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
@@ -342,7 +357,7 @@ static _25lcxxxx_status_reg_t g_status_reg = { .u = 0 };
 
 void _25lcxxxx_hndl_test(void)
 {
-	static cnt = 0;
+	static uint32_t cnt = 0;
 
 	switch (cnt)
 	{
