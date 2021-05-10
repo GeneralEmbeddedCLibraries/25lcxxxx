@@ -39,6 +39,31 @@
  */
 #define _25LCXXXX_CFG_ASSERT_EN				( 1 )
 
+/**
+ * 	Device number address bits
+ *
+ * 	@note 	This consequent defines memory size of device. E.g. for 25LC640
+ * 			density in bits are 64k, meaning that 8k x 8 memory arrangement.
+ * 			Therefore 1024 * 8 -> 0x2000 -> 12 bit to describe.
+ *
+ * 	@note	User can obtain information about number of address bits
+ * 			in Table 2-2 of DS22040A in Microchip document
+ */
+#define _25LCXXXX_CFG_ADDR_BIT_NUM			( 12 )
+
+/**
+ * 	Device page size
+ *
+ * 	@note	This defines physical boundaries inside memory chip and
+ * 			are important when reading/writing across two neighbor
+ * 			pages.
+ *
+ * 	@note	User can obtain information about page size in Table 2-2
+ * 			of DS22040A in Microchip document
+ *
+ * 	Unit: bytes
+ */
+#define _25LCXXXX_CFG_PAGE_SIZE_BYTE		( 32 )
 
 
 

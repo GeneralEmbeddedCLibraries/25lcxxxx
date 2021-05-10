@@ -34,6 +34,19 @@
 #define _25LCXXXX_MAX_ADDR		((uint32_t) (( 1UL << _25LCXXXX_CFG_ADDR_BIT_NUM ) - 1UL ))
 
 
+/**
+ * 	Read/Write memory command
+ */
+typedef union
+{
+	struct
+	{
+		uint8_t 	cmd;		/**<Command part of frame */
+		uint8_t 	addr[3];	/**<Address part of frame */
+	} field;
+	uint32_t u;					/**<Unsigned access */
+}_25lcxxxx_rw_cmd_t;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Variables
 ////////////////////////////////////////////////////////////////////////////////
@@ -46,10 +59,13 @@ static bool gb_is_init = false;
 ////////////////////////////////////////////////////////////////////////////////
 // Function Prototypes
 ////////////////////////////////////////////////////////////////////////////////
-static _25lcxxxx_status_t _25lcxxxx_write_enable 		(void);
-static _25lcxxxx_status_t _25lcxxxx_write_disable 		(void);
-static _25lcxxxx_status_t _25lcxxxx_read_status			(_25lcxxxx_status_reg_t * const p_status_reg);
-static _25lcxxxx_status_t _25lcxxxx_write_status		(const _25lcxxxx_status_reg_t * const p_status_reg);
+static _25lcxxxx_status_t 	_25lcxxxx_write_enable 			(void);
+static _25lcxxxx_status_t 	_25lcxxxx_write_disable 		(void);
+static _25lcxxxx_status_t 	_25lcxxxx_read_status			(_25lcxxxx_status_reg_t * const p_status_reg);
+static _25lcxxxx_status_t 	_25lcxxxx_write_status			(const _25lcxxxx_status_reg_t * const p_status_reg);
+static _25lcxxxx_status_t 	_25lcxxxx_read_command			(const uint32_t addr);
+static _25lcxxxx_status_t 	_25lcxxxx_write_command			(const uint32_t addr);
+static void 				_25lcxxxx_assemble_rw_cmd		(_25lcxxxx_rw_cmd_t * const p_frame, const _25lcxxxx_isa_t rw_cmd, const uint32_t addr);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -116,9 +132,10 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 			//bytes_till_boundary = 0;
 
 			// Calculate new address
-			_25lcxxxx_write_command( working_addr );
 
-			_25lcxxxx_if_transmit( p_data, bytes_till_boundary, eSPI_CS_HIGH_ON_EXIT );
+			//
+			status = _25lcxxxx_write_command( working_addr );
+			status |= _25lcxxxx_if_transmit( p_data, bytes_till_boundary, eSPI_CS_HIGH_ON_EXIT );
 
 		}
 	}
@@ -235,45 +252,83 @@ static uint32_t _25lcxxxx_get_number_of_sectors(const uint32_t addr, const uint3
 }
 
 
-typedef struct
-{
-	uint8_t 	cmd;
-	uint32_t 	addr;
-} _25lcxxxx_rw_cmd_t;
+
+
 
 static void _25lcxxxx_assemble_rw_cmd(_25lcxxxx_rw_cmd_t * const p_frame, const _25lcxxxx_isa_t rw_cmd, const uint32_t addr)
 {
-	// Wtch for address lenght here....
+	_25LCXXXX_ASSERT( NULL != p_frame );
 
-	#if ( 8 == _25LCXXXX_CFG_ADDR_BIT_NUM )
-
-	#elif ( 9 == _25LCXXXX_CFG_ADDR_BIT_NUM )
-
-	#elif ( 12 == _25LCXXXX_CFG_ADDR_BIT_NUM )
-
-	#endif
+	p_frame->u 				= 0UL;
+	p_frame->field.cmd 		= rw_cmd;
+	p_frame->field.addr[0]	= (( addr << 16U ) 	& 0xFFU );
+	p_frame->field.addr[1]	= (( addr << 8U ) 	& 0xFFU );
+	p_frame->field.addr[2]	= ( addr 			& 0xFFU );
 }
 
 
-static _25lcxxxx_status_t _25lcxxxx_send_write_command(const uint32_t addr)
+static _25lcxxxx_status_t _25lcxxxx_write_command(const uint32_t addr)
 {
 	_25lcxxxx_status_t 		status 	= e25LCXXXX_OK;
-	const _25lcxxxx_isa_t	cmd		= e25LCXXXX_ISA_WRITE;
+	_25lcxxxx_rw_cmd_t		cmd		= { .u = 0 };
 
+	// Assemble command
+	_25lcxxxx_assemble_rw_cmd( &cmd, e25LCXXXX_ISA_WRITE, addr );
+
+	#if ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 8)
+		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+
+	#elif ( 9 == _25LCXXXX_CFG_ADDR_BIT_NUM )
+
+		// 9 bit address specialty
+		if (( addr & 0x100U ) == 0x100U )
+		{
+			cmd.cmd |= ( 1U << 4U );
+		}
+
+		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+
+	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 16 )
+		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 3, eSPI_CS_LOW_ON_ENTRY );
+
+	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 24 )
+		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 4, eSPI_CS_LOW_ON_ENTRY );
+
+	#endif
 
 	return status;
 }
 
 
 
-static _25lcxxxx_status_t _25lcxxxx_send_read_command(const uint32_t addr)
+static _25lcxxxx_status_t _25lcxxxx_read_command(const uint32_t addr)
 {
-	_25lcxxxx_status_t 			status 	= e25LCXXXX_OK;
-	_25lcxxxx_rw_cmd_t	cmd		= { 0 };
+	_25lcxxxx_status_t 		status 	= e25LCXXXX_OK;
+	_25lcxxxx_rw_cmd_t		cmd		= { .u = 0 };
 
-	// Assemble read/write command
+	// Assemble command
+	_25lcxxxx_assemble_rw_cmd( &cmd, e25LCXXXX_ISA_READ, addr );
 
-	status = _25lcxxxx_if_transmit( &cmd, size, cs_action)
+	#if ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 8)
+		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+
+	#elif ( 9 == _25LCXXXX_CFG_ADDR_BIT_NUM )
+
+		// 9 bit address specialty
+		if (( addr & 0x100U ) == 0x100U )
+		{
+			cmd.cmd |= ( 1U << 4U );
+		}
+
+		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+
+	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 16 )
+		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 3, eSPI_CS_LOW_ON_ENTRY );
+
+	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 24 )
+		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 4, eSPI_CS_LOW_ON_ENTRY );
+
+	#endif
 
 	return status;
 }

@@ -24,25 +24,23 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <stdint.h>
 #include <stdbool.h>
+#include "25lcxxxx/src/25lcxxxx.h"
+
+// USER INCLUDES BEGIN...
+
+#include "drivers/peripheral/spi/spi.h"
+
+// USER INCLUDES END...
 
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
 
-
-// TODO: For know let it be here
-typedef enum
-{
-	e25LCXXXX_OK			= 0,		/**<Normal operation */
-	e25LCXXXX_ERROR_SPI		= 0x01,		/**<SPI error */
-	e25LCXXXX_ERROR_INIT	= 0x02,		/**<Initialisation error */
-} _25lcxxxx_status_t;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Functions Prototypes
 ////////////////////////////////////////////////////////////////////////////////
-_25lcxxxx_status_t _25lcxxxx_if_init			(void);
-_25lcxxxx_status_t _25lcxxxx_if_write_register	(const uint8_t addr, const uint8_t * p_tx_data, const uint32_t size);
-_25lcxxxx_status_t _25lcxxxx_if_read_register	(const uint8_t addr, uint8_t * p_rx_data, const uint32_t size);
+_25lcxxxx_status_t 	_25lcxxxx_if_init		(void);
+_25lcxxxx_status_t 	_25lcxxxx_if_transmit	(const uint8_t * p_data, const uint32_t size, const spi_cs_action_t cs_action);
+_25lcxxxx_status_t 	_25lcxxxx_if_receive	(uint8_t * p_data, const uint32_t size, const spi_cs_action_t cs_action);
 
 #endif // _STUSB4500_IF_H_

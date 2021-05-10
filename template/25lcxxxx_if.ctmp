@@ -21,12 +21,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Includes
 ////////////////////////////////////////////////////////////////////////////////
-#include "stm32f7xx_hal.h"
 #include "25lcxxxx_if.h"
 
 // USER INCLUDES BEGIN...
 
-//#include "drivers/peripheral/i2c/i2c.h"
 
 // USER INCLUDES END...
 
@@ -70,23 +68,25 @@ _25lcxxxx_status_t _25lcxxxx_if_init(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*		Write to register
+*		Write bytes via SPI to device
 *
 * @note	User shall provide definition of that function based on used platform!
 *
-* @param[in] 	addr 		- Register address
-* @param[in] 	p_tx_data	- Pointer to transmit data
+* @param[in] 	p_data		- Pointer to transmit data
 * @param[in] 	size		- Size of transmit data
 * @return 		status 		- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-_25lcxxxx_status_t _25lcxxxx_if_write_register(const uint8_t addr, const uint8_t * p_tx_data, const uint32_t size)
+_25lcxxxx_status_t _25lcxxxx_if_transmit(const uint8_t * p_data, const uint32_t size, const spi_cs_action_t cs_action)
 {
 	_25lcxxxx_status_t status = e25LCXXXX_OK;
 
 	// USER CODE BEGIN...
 
-
+	if ( eSPI_OK != spi_2_transmit( eSPI2_CH_EEPROM, (uint8_t*) p_data, size, cs_action ))
+	{
+		status = e25LCXXXX_ERROR_SPI;
+	}
 
 	// USER CODE END...
 
@@ -95,23 +95,25 @@ _25lcxxxx_status_t _25lcxxxx_if_write_register(const uint8_t addr, const uint8_t
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*		Read from register
+*		Read bytes via SPI from device
 *
 * @note	User shall provide definition of that function based on used platform!
 *
-* @param[in] 	addr 		- Register address
-* @param[in] 	p_rx_data	- Pointer to receive data
+* @param[in] 	p_data		- Pointer to receive data
 * @param[in] 	size		- Size of received data
 * @return 		status 		- Status of operation
 */
 ////////////////////////////////////////////////////////////////////////////////
-_25lcxxxx_status_t _25lcxxxx_if_read_register(const uint8_t addr, uint8_t * p_rx_data, const uint32_t size)
+_25lcxxxx_status_t _25lcxxxx_if_receive(uint8_t * p_data, const uint32_t size, const spi_cs_action_t cs_action)
 {
 	_25lcxxxx_status_t status = e25LCXXXX_OK;
 
 	// USER CODE BEGIN...
 
-
+	if ( eSPI_OK != spi_2_receive( eSPI2_CH_EEPROM, p_data, size, cs_action ))
+	{
+		status = e25LCXXXX_ERROR_SPI;
+	}
 
 	// USER CODE END...
 
