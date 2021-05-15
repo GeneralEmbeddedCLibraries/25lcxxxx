@@ -31,8 +31,14 @@
 /**
  *  Highest memory address
  */
-#define _25LCXXXX_MAX_ADDR		((uint32_t) (( 1UL << _25LCXXXX_CFG_ADDR_BIT_NUM ) - 1UL ))
+#define _25LCXXXX_MAX_ADDR					((uint32_t) (( 1UL << _25LCXXXX_CFG_ADDR_BIT_NUM ) - 1UL ))
 
+/**
+ * 	Write in progress wait timeout
+ *
+ * 	Unit: miliseconds
+ */
+#define _25LCXXXX_WAIT_WRITE_TIMEOUT_MS		( 5UL )
 
 /**
  * 	Read/Write memory command
@@ -70,6 +76,7 @@ static uint32_t 			_25lcxxxx_calc_num_of_sectors		(const uint32_t addr, const ui
 static uint32_t 			_25lcxxxx_calc_transfer_size		(const uint32_t addr, const uint32_t size);
 static bool					_25lcxxxx_read_wip_flag				(void);
 static bool					_25lcxxxx_read_wel_flag				(void);
+static _25lcxxxx_status_t	_25lcxxxx_wait_for_write_process	(const uint32_t timeout);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -177,17 +184,24 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 		// Send write command
 		status = _25lcxxxx_write_command( working_addr );
 
-		// Send data payload
-		status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
+		if ( e25LCXXXX_OK == status )
+		{
+			// Send data payload
+			status = _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
 
-		// Increment address & written data offset
-		data_offset += bytes_to_transfer;
-		working_addr += bytes_to_transfer;
-		working_size -= bytes_to_transfer;
+			// Increment address & written data offset
+			data_offset += bytes_to_transfer;
+			working_addr += bytes_to_transfer;
+			working_size -= bytes_to_transfer;
+		}
+		else
+		{
+			break;
+		}
 	}
 
 	// All bytes shall be transfered
-	_25LCXXXX_ASSERT( 0UL == working_size );
+	//_25LCXXXX_ASSERT( 0UL == working_size );
 
 	return status;
 }
@@ -365,41 +379,44 @@ static _25lcxxxx_status_t _25lcxxxx_write_command(const uint32_t addr)
 	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
 	_25lcxxxx_rw_cmd_t	cmd		= { .u = 0 };
 
-	// Check for WIP flag
-	while ( true == _25lcxxxx_read_wip_flag());
+	// Wait for previous write process
+	status = _25lcxxxx_wait_for_write_process( _25LCXXXX_WAIT_WRITE_TIMEOUT_MS );
 
-	// Enable write enable latch
-	_25lcxxxx_write_enable();
+	if ( e25LCXXXX_OK == status )
+	{
+		// Enable write enable latch
+		_25lcxxxx_write_enable();
 
-	// Assemble command
-	_25lcxxxx_assemble_rw_cmd( &cmd, e25LCXXXX_ISA_WRITE, addr );
+		// Assemble command
+		_25lcxxxx_assemble_rw_cmd( &cmd, e25LCXXXX_ISA_WRITE, addr );
 
-	// Send command
-	// NOTE: Based on number of address bits command is being divided!
-	#if ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 8)
-		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+		// Send command
+		// NOTE: Based on number of address bits command is being divided!
+		#if ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 8)
+			status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
 
-	#elif ( 9 == _25LCXXXX_CFG_ADDR_BIT_NUM )
+		#elif ( 9 == _25LCXXXX_CFG_ADDR_BIT_NUM )
 
-		// 9 bit address specialty
-		if (( addr & 0x100U ) == 0x100U )
-		{
-			cmd.field.cmd |= ( 0x80U );
-		}
-		else
-		{
-			cmd.field.cmd &= ~( 0x80U );
-		}
+			// 9 bit address specialty
+			if (( addr & 0x100U ) == 0x100U )
+			{
+				cmd.field.cmd |= ( 0x80U );
+			}
+			else
+			{
+				cmd.field.cmd &= ~( 0x80U );
+			}
 
-		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+			status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
 
-	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 16 )
-		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 3, eSPI_CS_LOW_ON_ENTRY );
+		#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 16 )
+			status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 3, eSPI_CS_LOW_ON_ENTRY );
 
-	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 24 )
-		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 4, eSPI_CS_LOW_ON_ENTRY );
+		#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 24 )
+			status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 4, eSPI_CS_LOW_ON_ENTRY );
 
-	#endif
+		#endif
+	}
 
 	return status;
 }
@@ -472,7 +489,61 @@ static bool _25lcxxxx_read_wel_flag(void)
 	return wel;
 }
 
+static _25lcxxxx_status_t _25lcxxxx_wait_for_write_process(const uint32_t timeout)
+{
+			_25lcxxxx_status_t 	status 		= e25LCXXXX_OK;
+	static 	uint32_t			tick_prev	= 0UL;
+			uint32_t			tick		= 0UL;
+			uint32_t 			safe_cnt	= 1000000UL;
+			bool				wip_flag	= false;
+			uint8_t				timeout_cnt = 0U;
 
+	// Read WIP flag
+	wip_flag = _25lcxxxx_read_wip_flag();
+
+	// Write is in progress - check for timeout amount of time
+	if ( true == wip_flag )
+	{
+		// Get current tick
+		tick = _25lcxxxx_if_get_sys_time_ms();
+		tick_prev = tick;
+
+		// Continuously check for WIP
+		while ( safe_cnt > 0 )
+		{
+			// Get current timetick
+			tick = _25lcxxxx_if_get_sys_time_ms();
+
+			// Read every 1ms
+			if ( (uint32_t) ( tick - tick_prev ) >= 1UL )
+			{
+				tick_prev = tick;
+				timeout_cnt++;
+
+				// Read WIP flag
+				wip_flag = _25lcxxxx_read_wip_flag();
+
+				if ( false == wip_flag )
+				{
+					break;
+				}
+			}
+
+			if ( timeout_cnt >= timeout )
+			{
+				status = e25LCXXXX_ERROR;
+				break;
+			}
+
+			// Decrement safety counter
+			safe_cnt--;
+		}
+	}
+
+	_25LCXXXX_ASSERT( safe_cnt > 0 );
+
+	return status;
+}
 
 // TODO: Remove only testing
 

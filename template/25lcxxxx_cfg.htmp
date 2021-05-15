@@ -67,6 +67,15 @@
 
 
 
+
+#if ( _25LCXXXX_CFG_ADDR_BIT_NUM < 7 ) || ( _25LCXXXX_CFG_ADDR_BIT_NUM > 17 )
+	#error "25LCXXXX Configuration Failure: Invalid size of address bits!"
+#endif
+
+#if ( _25LCXXXX_CFG_PAGE_SIZE_BYTE < 16 ) || ( _25LCXXXX_CFG_PAGE_SIZE_BYTE > 256 )
+	#error "25LCXXXX Configuration Failure: Invalid page size!"
+#endif
+
 /**
  * 	Debug communication port macros
  */

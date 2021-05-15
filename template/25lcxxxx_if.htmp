@@ -39,8 +39,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Functions Prototypes
 ////////////////////////////////////////////////////////////////////////////////
-_25lcxxxx_status_t 	_25lcxxxx_if_init		(void);
-_25lcxxxx_status_t 	_25lcxxxx_if_transmit	(const uint8_t * p_data, const uint32_t size, const spi_cs_action_t cs_action);
-_25lcxxxx_status_t 	_25lcxxxx_if_receive	(uint8_t * p_data, const uint32_t size, const spi_cs_action_t cs_action);
+_25lcxxxx_status_t 	_25lcxxxx_if_init				(void);
+_25lcxxxx_status_t 	_25lcxxxx_if_transmit			(const uint8_t * p_data, const uint32_t size, const spi_cs_action_t cs_action);
+_25lcxxxx_status_t 	_25lcxxxx_if_receive			(uint8_t * p_data, const uint32_t size, const spi_cs_action_t cs_action);
+uint32_t 			_25lcxxxx_if_get_sys_time_ms	(void);
 
 #endif // _STUSB4500_IF_H_

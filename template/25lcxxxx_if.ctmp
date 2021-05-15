@@ -25,6 +25,7 @@
 
 // USER INCLUDES BEGIN...
 
+#include "stm32f7xx.h"
 
 // USER INCLUDES END...
 
@@ -118,6 +119,28 @@ _25lcxxxx_status_t _25lcxxxx_if_receive(uint8_t * p_data, const uint32_t size, c
 	// USER CODE END...
 
 	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Get system timetick in millisecond
+*
+* @note	User shall provide definition of that function based on used platform!
+*
+* @return 		time_ms	- System timetick in milisecond
+*/
+////////////////////////////////////////////////////////////////////////////////
+uint32_t _25lcxxxx_if_get_sys_time_ms(void)
+{
+	uint32_t time_ms = 0;
+
+	// USER CODE BEGIN...
+
+	time_ms = HAL_GetTick();
+
+	// USER CODE END...
+
+	return time_ms;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
