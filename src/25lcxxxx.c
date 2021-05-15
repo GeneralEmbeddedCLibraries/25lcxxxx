@@ -313,7 +313,7 @@ static uint32_t _25lcxxxx_calc_transfer_size(const uint32_t addr, const uint32_t
 	bytes_in_sector = _25LCXXXX_CFG_PAGE_SIZE_BYTE - ( addr % _25LCXXXX_CFG_PAGE_SIZE_BYTE );
 
 	// Bytes will not pass page boundary
-	if ( size < bytes_in_sector )
+	if ( size <= bytes_in_sector )
 	{
 		bytes_to_transfer = size;
 	}
@@ -321,7 +321,7 @@ static uint32_t _25lcxxxx_calc_transfer_size(const uint32_t addr, const uint32_t
 	// Bytes will pass page boundary - limit to boundary
 	else
 	{
-		bytes_to_transfer = size;
+		bytes_to_transfer = bytes_in_sector;
 	}
 
 	return bytes_to_transfer;
