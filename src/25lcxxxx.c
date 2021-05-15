@@ -179,7 +179,7 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 			status = _25lcxxxx_write_command( working_addr );
 
 			// Send data payload
-			if ( i == num_of_sectors )
+			if ( i == ( num_of_sectors -1U ))
 			{
 				status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
 			}
@@ -370,7 +370,7 @@ static _25lcxxxx_status_t _25lcxxxx_write_command(const uint32_t addr)
 	// Send command
 	// NOTE: Based on number of address bits command is being divided!
 	#if ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 8)
-		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
 
 	#elif ( 9 == _25LCXXXX_CFG_ADDR_BIT_NUM )
 
@@ -384,13 +384,13 @@ static _25lcxxxx_status_t _25lcxxxx_write_command(const uint32_t addr)
 			cmd.field.cmd &= ~( 0x80U );
 		}
 
-		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
 
 	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 16 )
-		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 3, eSPI_CS_LOW_ON_ENTRY );
+		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 3, eSPI_CS_LOW_ON_ENTRY );
 
 	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 24 )
-		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 4, eSPI_CS_LOW_ON_ENTRY );
+		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 4, eSPI_CS_LOW_ON_ENTRY );
 
 	#endif
 
