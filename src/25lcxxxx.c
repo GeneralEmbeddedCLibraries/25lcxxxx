@@ -201,7 +201,7 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 	}
 
 	// All bytes shall be transfered
-	//_25LCXXXX_ASSERT( 0UL == working_size );
+	_25LCXXXX_ASSERT( 0UL == working_size );
 
 	return status;
 }
@@ -318,7 +318,7 @@ static uint32_t _25lcxxxx_calc_num_of_sectors(const uint32_t addr, const uint32_
 
 	// Calculate address & size factors of sector size
 	k_a = (uint32_t) ( addr / _25LCXXXX_CFG_PAGE_SIZE_BYTE );
-	k_s = (uint32_t) (( addr + size ) / _25LCXXXX_CFG_PAGE_SIZE_BYTE );
+	k_s = (uint32_t) (( addr + size - 1UL ) / _25LCXXXX_CFG_PAGE_SIZE_BYTE );
 
 	// Based on address & size factors number of sectors can be calculated
 	sector_num = ( k_s - k_a ) + 1UL;
