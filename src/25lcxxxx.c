@@ -161,46 +161,38 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 
 	// Invalid inputs
 	_25LCXXXX_ASSERT( size > 0 );
-	_25LCXXXX_ASSERT( addr <= _25LCXXXX_MAX_ADDR );
+	_25LCXXXX_ASSERT(( addr + size ) <= _25LCXXXX_MAX_ADDR );
 
-	// Check address boundary
-	if (( addr + size ) <= _25LCXXXX_MAX_ADDR )
+	// Calculate how many sectors takes write request
+	const uint32_t num_of_sectors = _25lcxxxx_calc_num_of_sectors( addr, size );
+
+	// Write to all sectors
+	for (uint32_t i = 0; i < num_of_sectors; i++ )
 	{
-		// Calculate how many sectors takes write request
-		const uint32_t num_of_sectors = _25lcxxxx_calc_num_of_sectors( addr, size );
+		// Calculate bytes to transfer till end of page
+		bytes_to_transfer = _25lcxxxx_calc_transfer_size( working_addr, working_size );
 
-		// Write to all sectors
-		for (uint32_t i = 0; i < num_of_sectors; i++ )
+		// Send write command
+		status = _25lcxxxx_write_command( working_addr );
+
+		// Send data payload
+		if ( i == ( num_of_sectors -1U ))
 		{
-			// Calculate bytes to transfer till end of page
-			bytes_to_transfer = _25lcxxxx_calc_transfer_size( working_addr, working_size );
-
-			// Send write command
-			status = _25lcxxxx_write_command( working_addr );
-
-			// Send data payload
-			if ( i == ( num_of_sectors -1U ))
-			{
-				status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
-			}
-			else
-			{
-				status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_NO_ACTION );
-			}
-
-			// Increment address & written data offset
-			data_offset += bytes_to_transfer;
-			working_addr += bytes_to_transfer;
-			working_size -= bytes_to_transfer;
+			status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
+		}
+		else
+		{
+			status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_NO_ACTION );
 		}
 
-		// All bytes shall be transfered
-		_25LCXXXX_ASSERT( 0UL == working_size );
+		// Increment address & written data offset
+		data_offset += bytes_to_transfer;
+		working_addr += bytes_to_transfer;
+		working_size -= bytes_to_transfer;
 	}
-	else
-	{
-		status = e25LCXXXX_ERROR_ADDR;
-	}
+
+	// All bytes shall be transfered
+	_25LCXXXX_ASSERT( 0UL == working_size );
 
 	return status;
 }
@@ -224,22 +216,13 @@ _25lcxxxx_status_t _25lcxxxx_read(const uint32_t addr, const uint32_t size, uint
 
 	// Invalid inputs
 	_25LCXXXX_ASSERT( size > 0 );
-	_25LCXXXX_ASSERT( addr <= _25LCXXXX_MAX_ADDR );
+	_25LCXXXX_ASSERT(( addr + size ) <= _25LCXXXX_MAX_ADDR );
 
-	// Check address boundary
-	if (( addr + size ) <= _25LCXXXX_MAX_ADDR )
-	{
-		// Send write command
-		status = _25lcxxxx_read_command( addr );
+	// Send write command
+	status = _25lcxxxx_read_command( addr );
 
-		// Send data payload
-		status |= _25lcxxxx_if_receive( p_data, size, eSPI_CS_HIGH_ON_EXIT );
-	}
-	else
-	{
-		status = e25LCXXXX_ERROR_ADDR;
-	}
-
+	// Send data payload
+	status |= _25lcxxxx_if_receive( p_data, size, eSPI_CS_HIGH_ON_EXIT );
 
 	return status;
 }
@@ -353,9 +336,9 @@ static void _25lcxxxx_assemble_rw_cmd(_25lcxxxx_rw_cmd_t * const p_frame, const 
 
 	p_frame->u 				= 0UL;
 	p_frame->field.cmd 		= rw_cmd;
-	p_frame->field.addr[0]	= (( addr << 16U ) 	& 0xFFU );
-	p_frame->field.addr[1]	= (( addr << 8U ) 	& 0xFFU );
-	p_frame->field.addr[2]	= ( addr 			& 0xFFU );
+	p_frame->field.addr[0]	= ( addr 			& 0xFFU );
+	p_frame->field.addr[1]	= (( addr >> 8U ) 	& 0xFFU );
+	p_frame->field.addr[2]	= (( addr >> 16U ) 	& 0xFFU );
 }
 
 
