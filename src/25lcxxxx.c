@@ -68,6 +68,8 @@ static _25lcxxxx_status_t 	_25lcxxxx_write_command				(const uint32_t addr);
 static void 				_25lcxxxx_assemble_rw_cmd			(_25lcxxxx_rw_cmd_t * const p_frame, const _25lcxxxx_isa_t rw_cmd, const uint32_t addr);
 static uint32_t 			_25lcxxxx_calc_num_of_sectors		(const uint32_t addr, const uint32_t size);
 static uint32_t 			_25lcxxxx_calc_transfer_size		(const uint32_t addr, const uint32_t size);
+static bool					_25lcxxxx_read_wip_flag				(void);
+static bool					_25lcxxxx_read_wel_flag				(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -82,8 +84,8 @@ static uint32_t 			_25lcxxxx_calc_transfer_size		(const uint32_t addr, const uin
 ////////////////////////////////////////////////////////////////////////////////
 _25lcxxxx_status_t _25lcxxxx_init(void)
 {
-	_25lcxxxx_status_t 		status 		= e25LCXXXX_OK;
-	_25lcxxxx_status_reg_t	stat_reg	= { .u = 0 };
+	_25lcxxxx_status_t 	status 		= e25LCXXXX_OK;
+	bool				wel_flag	= false;
 
 	// Initialize app interface
 	status = _25lcxxxx_if_init();
@@ -91,11 +93,11 @@ _25lcxxxx_status_t _25lcxxxx_init(void)
 	// Enable write latch
 	status |= _25lcxxxx_write_enable();
 
-	// Verify enable write latch
-	status |= _25lcxxxx_read_status( &stat_reg );
+	// Read WEL flag
+	wel_flag = _25lcxxxx_read_wel_flag();
 
 	if (	( e25LCXXXX_OK == status )
-		&& 	( true == stat_reg.b.wel ))
+		&& 	( true == wel_flag ))
 	{
 		gb_is_init = true;
 	}
@@ -150,11 +152,12 @@ _25lcxxxx_status_t _25lcxxxx_deinit	(void)
 ////////////////////////////////////////////////////////////////////////////////
 _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, const uint8_t * const p_data)
 {
-	_25lcxxxx_status_t 	status				= e25LCXXXX_OK;
-	uint32_t			working_addr		= addr;
-	uint32_t			working_size		= size;
-	uint32_t			bytes_to_transfer	= 0UL;
-	uint32_t			data_offset			= 0UL;
+	_25lcxxxx_status_t 		status				= e25LCXXXX_OK;
+	uint32_t				working_addr		= addr;
+	uint32_t				working_size		= size;
+	uint32_t				bytes_to_transfer	= 0UL;
+	uint32_t				data_offset			= 0UL;
+	_25lcxxxx_status_reg_t 	stat_reg			= { .u = 0 };
 
 	// Check for init
 	_25LCXXXX_ASSERT( true == gb_is_init );
@@ -163,36 +166,65 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 	_25LCXXXX_ASSERT( size > 0 );
 	_25LCXXXX_ASSERT(( addr + size ) <= _25LCXXXX_MAX_ADDR );
 
-	// Calculate how many sectors takes write request
-	const uint32_t num_of_sectors = _25lcxxxx_calc_num_of_sectors( addr, size );
+	// Get WIP flag
+	wip_flag = _25lcxxxx_read_wip_flag();
 
-	// Write to all sectors
-	for (uint32_t i = 0; i < num_of_sectors; i++ )
+	// Check WIP flag
+	if ( false == wip_flag )
 	{
-		// Calculate bytes to transfer till end of page
-		bytes_to_transfer = _25lcxxxx_calc_transfer_size( working_addr, working_size );
+		// Enable write enable latch
+		status = _25lcxxxx_write_enable();
 
-		// Send write command
-		status = _25lcxxxx_write_command( working_addr );
+		// Check write enable latch
+		wel_flag = _25lcxxxx_read_wel_flag();
 
-		// Send data payload
-		if ( i == ( num_of_sectors -1U ))
+		if 	(	( status != e25LCXXXX_OK )
+			&& 	( true == wel_flag ))
 		{
-			status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
+			// Calculate how many sectors takes write request
+			const uint32_t num_of_sectors = _25lcxxxx_calc_num_of_sectors( addr, size );
+
+			// Write to all sectors
+			for (uint32_t i = 0; i < num_of_sectors; i++ )
+			{
+				// Calculate bytes to transfer till end of page
+				bytes_to_transfer = _25lcxxxx_calc_transfer_size( working_addr, working_size );
+
+				// Send write command
+				status = _25lcxxxx_write_command( working_addr );
+
+				// Send data payload
+				//status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
+
+
+				if ( i == ( num_of_sectors -1U ))
+				{
+					status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
+				}
+				else
+				{
+					status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_NO_ACTION );
+				}
+
+
+				// Increment address & written data offset
+				data_offset += bytes_to_transfer;
+				working_addr += bytes_to_transfer;
+				working_size -= bytes_to_transfer;
+			}
+
+			// All bytes shall be transfered
+			_25LCXXXX_ASSERT( 0UL == working_size );
 		}
 		else
 		{
-			status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_NO_ACTION );
+			status = e25LCXXXX_ERROR;
 		}
-
-		// Increment address & written data offset
-		data_offset += bytes_to_transfer;
-		working_addr += bytes_to_transfer;
-		working_size -= bytes_to_transfer;
 	}
-
-	// All bytes shall be transfered
-	_25LCXXXX_ASSERT( 0UL == working_size );
+	else
+	{
+		status = e25LCXXXX_ERROR;
+	}
 
 	return status;
 }
@@ -420,6 +452,33 @@ static _25lcxxxx_status_t _25lcxxxx_read_command(const uint32_t addr)
 	return status;
 }
 
+
+static bool _25lcxxxx_read_wip_flag(void)
+{
+	bool 					wip 		= false;
+	_25lcxxxx_status_reg_t	stat_reg	= { .u = 0 };
+
+	if ( e25LCXXXX_OK == _25lcxxxx_read_status( & stat_reg ))
+	{
+		wip = (bool) ( stat_reg.b.wip );
+	}
+
+	return wip;
+}
+
+
+static bool _25lcxxxx_read_wel_flag(void)
+{
+	bool wel = false;
+	_25lcxxxx_status_reg_t	stat_reg	= { .u = 0 };
+
+	if ( e25LCXXXX_OK == _25lcxxxx_read_status( & stat_reg ))
+	{
+		wel = (bool) ( stat_reg.b.wel );
+	}
+
+	return wel;
+}
 
 
 
