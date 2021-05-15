@@ -82,7 +82,8 @@ static uint32_t 			_25lcxxxx_calc_transfer_size		(const uint32_t addr, const uin
 ////////////////////////////////////////////////////////////////////////////////
 _25lcxxxx_status_t _25lcxxxx_init(void)
 {
-	_25lcxxxx_status_t status = e25LCXXXX_OK;
+	_25lcxxxx_status_t 		status 		= e25LCXXXX_OK;
+	_25lcxxxx_status_reg_t	stat_reg	= { .u = 0 };
 
 	// Initialize app interface
 	status = _25lcxxxx_if_init();
@@ -90,12 +91,47 @@ _25lcxxxx_status_t _25lcxxxx_init(void)
 	// Enable write latch
 	status |= _25lcxxxx_write_enable();
 
-	if ( e25LCXXXX_OK == status )
+	// Verify enable write latch
+	status |= _25lcxxxx_read_status( &stat_reg );
+
+	if (	( e25LCXXXX_OK == status )
+		&& 	( true == stat_reg.b.wel ))
 	{
 		gb_is_init = true;
 	}
 
 	_25LCXXXX_ASSERT( e25LCXXXX_OK == status );
+	_25LCXXXX_ASSERT( true == gb_is_init );
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		De-Initialize EEPROM device
+*
+* @return 	status - Status of deinitialization
+*/
+////////////////////////////////////////////////////////////////////////////////
+_25lcxxxx_status_t _25lcxxxx_deinit	(void)
+{
+	_25lcxxxx_status_t 		status 		= e25LCXXXX_OK;
+	_25lcxxxx_status_reg_t	stat_reg	= { .u = 0 };
+
+	// Disable write latch
+	status |= _25lcxxxx_write_disable();
+
+	// Verify enable write latch
+	status |= _25lcxxxx_read_status( &stat_reg );
+
+	if (	( e25LCXXXX_OK == status )
+		&& 	( false == stat_reg.b.wel ))
+	{
+		gb_is_init = false;
+	}
+
+	_25LCXXXX_ASSERT( e25LCXXXX_OK == status );
+	_25LCXXXX_ASSERT( false == gb_is_init );
 
 	return status;
 }
@@ -103,6 +139,8 @@ _25lcxxxx_status_t _25lcxxxx_init(void)
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *		Write byte(s) to EEPROM
+*
+* @note		Need to be check for page boundary unless it wrap around!
 *
 * @param[in]	addr	- Start address of write
 * @param[in]	size	- Size of bytes to write
@@ -122,7 +160,7 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 	_25LCXXXX_ASSERT( true == gb_is_init );
 
 	// Invalid inputs
-	_25LCXXXX_ASSERT( 0UL == size);
+	_25LCXXXX_ASSERT( size > 0 );
 	_25LCXXXX_ASSERT( addr <= _25LCXXXX_MAX_ADDR );
 
 	// Check address boundary
@@ -134,13 +172,21 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 		// Write to all sectors
 		for (uint32_t i = 0; i < num_of_sectors; i++ )
 		{
+			// Calculate bytes to transfer till end of page
 			bytes_to_transfer = _25lcxxxx_calc_transfer_size( working_addr, working_size );
 
 			// Send write command
 			status = _25lcxxxx_write_command( working_addr );
 
 			// Send data payload
-			status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
+			if ( i == num_of_sectors )
+			{
+				status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
+			}
+			else
+			{
+				status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_NO_ACTION );
+			}
 
 			// Increment address & written data offset
 			data_offset += bytes_to_transfer;
@@ -148,7 +194,7 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 			working_size -= bytes_to_transfer;
 		}
 
-		// All bytes shall be tranfered
+		// All bytes shall be transfered
 		_25LCXXXX_ASSERT( 0UL == working_size );
 	}
 	else
@@ -177,13 +223,17 @@ _25lcxxxx_status_t _25lcxxxx_read(const uint32_t addr, const uint32_t size, uint
 	_25LCXXXX_ASSERT( true == gb_is_init );
 
 	// Invalid inputs
-	_25LCXXXX_ASSERT( 0UL == size);
+	_25LCXXXX_ASSERT( size > 0 );
 	_25LCXXXX_ASSERT( addr <= _25LCXXXX_MAX_ADDR );
 
 	// Check address boundary
 	if (( addr + size ) <= _25LCXXXX_MAX_ADDR )
 	{
+		// Send write command
+		status = _25lcxxxx_read_command( addr );
 
+		// Send data payload
+		status |= _25lcxxxx_if_receive( p_data, size, eSPI_CS_HIGH_ON_EXIT );
 	}
 	else
 	{
@@ -360,7 +410,7 @@ static _25lcxxxx_status_t _25lcxxxx_read_command(const uint32_t addr)
 	// Send command
 	// NOTE: Based on number of address bits command is being divided!
 	#if ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 8)
-		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
 
 	#elif ( 9 == _25LCXXXX_CFG_ADDR_BIT_NUM )
 
@@ -374,13 +424,13 @@ static _25lcxxxx_status_t _25lcxxxx_read_command(const uint32_t addr)
 			cmd.field.cmd &= ~( 0x80U );
 		}
 
-		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
+		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 2, eSPI_CS_LOW_ON_ENTRY );
 
 	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 16 )
-		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 3, eSPI_CS_LOW_ON_ENTRY );
+		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 3, eSPI_CS_LOW_ON_ENTRY );
 
 	#elif ( _25LCXXXX_CFG_ADDR_BIT_NUM <= 24 )
-		status = _25lcxxxx_if_transmit((uint8_t*) cmd.u, 4, eSPI_CS_LOW_ON_ENTRY );
+		status = _25lcxxxx_if_transmit((uint8_t*) &cmd.u, 4, eSPI_CS_LOW_ON_ENTRY );
 
 	#endif
 
