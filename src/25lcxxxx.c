@@ -59,14 +59,15 @@ static bool gb_is_init = false;
 ////////////////////////////////////////////////////////////////////////////////
 // Function Prototypes
 ////////////////////////////////////////////////////////////////////////////////
-static _25lcxxxx_status_t 	_25lcxxxx_write_enable 			(void);
-static _25lcxxxx_status_t 	_25lcxxxx_write_disable 		(void);
-static _25lcxxxx_status_t 	_25lcxxxx_read_status			(_25lcxxxx_status_reg_t * const p_status_reg);
-static _25lcxxxx_status_t 	_25lcxxxx_write_status			(const _25lcxxxx_status_reg_t * const p_status_reg);
-static _25lcxxxx_status_t 	_25lcxxxx_read_command			(const uint32_t addr);
-static _25lcxxxx_status_t 	_25lcxxxx_write_command			(const uint32_t addr);
-static void 				_25lcxxxx_assemble_rw_cmd		(_25lcxxxx_rw_cmd_t * const p_frame, const _25lcxxxx_isa_t rw_cmd, const uint32_t addr);
-static uint32_t 			_25lcxxxx_get_number_of_sectors	(const uint32_t addr, const uint32_t size);
+static _25lcxxxx_status_t 	_25lcxxxx_write_enable 				(void);
+static _25lcxxxx_status_t 	_25lcxxxx_write_disable 			(void);
+static _25lcxxxx_status_t 	_25lcxxxx_read_status				(_25lcxxxx_status_reg_t * const p_status_reg);
+static _25lcxxxx_status_t 	_25lcxxxx_write_status				(const _25lcxxxx_status_reg_t * const p_status_reg);
+static _25lcxxxx_status_t 	_25lcxxxx_read_command				(const uint32_t addr);
+static _25lcxxxx_status_t 	_25lcxxxx_write_command				(const uint32_t addr);
+static void 				_25lcxxxx_assemble_rw_cmd			(_25lcxxxx_rw_cmd_t * const p_frame, const _25lcxxxx_isa_t rw_cmd, const uint32_t addr);
+static uint32_t 			_25lcxxxx_calc_num_of_sectors		(const uint32_t addr, const uint32_t size);
+static uint32_t 			_25lcxxxx_calc_transfer_size		(const uint32_t addr, const uint32_t size);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Functions
@@ -111,36 +112,44 @@ _25lcxxxx_status_t _25lcxxxx_init(void)
 ////////////////////////////////////////////////////////////////////////////////
 _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, const uint8_t * const p_data)
 {
-	_25lcxxxx_status_t 	status			= e25LCXXXX_OK;
-	uint32_t			working_addr	= 0UL;
+	_25lcxxxx_status_t 	status				= e25LCXXXX_OK;
+	uint32_t			working_addr		= addr;
+	uint32_t			working_size		= size;
+	uint32_t			bytes_to_transfer	= 0UL;
+	uint32_t			data_offset			= 0UL;
 
 	// Check for init
 	_25LCXXXX_ASSERT( true == gb_is_init );
 
-	// Invalid input
+	// Invalid inputs
 	_25LCXXXX_ASSERT( 0UL == size);
+	_25LCXXXX_ASSERT( addr <= _25LCXXXX_MAX_ADDR );
 
 	// Check address boundary
 	if (( addr + size ) <= _25LCXXXX_MAX_ADDR )
 	{
 		// Calculate how many sectors takes write request
-		const uint32_t num_of_sectors = _25lcxxxx_get_number_of_sectors( addr, size );
+		const uint32_t num_of_sectors = _25lcxxxx_calc_num_of_sectors( addr, size );
 
 		// Write to all sectors
 		for (uint32_t i = 0; i < num_of_sectors; i++ )
 		{
-			// Calculate how many bytes till page boundary
-			uint8_t bytes_till_boundary = 0;
-
-			// Calculate new address
-			working_addr = 0;
+			bytes_to_transfer = _25lcxxxx_calc_transfer_size( working_addr, working_size );
 
 			// Send write command
 			status = _25lcxxxx_write_command( working_addr );
 
 			// Send data payload
-			status |= _25lcxxxx_if_transmit( p_data, bytes_till_boundary, eSPI_CS_HIGH_ON_EXIT );
+			status |= _25lcxxxx_if_transmit( ( p_data + data_offset ), bytes_to_transfer, eSPI_CS_HIGH_ON_EXIT );
+
+			// Increment address & written data offset
+			data_offset += bytes_to_transfer;
+			working_addr += bytes_to_transfer;
+			working_size -= bytes_to_transfer;
 		}
+
+		// All bytes shall be tranfered
+		_25LCXXXX_ASSERT( 0UL == working_size );
 	}
 	else
 	{
@@ -167,8 +176,9 @@ _25lcxxxx_status_t _25lcxxxx_read(const uint32_t addr, const uint32_t size, uint
 	// Check for init
 	_25LCXXXX_ASSERT( true == gb_is_init );
 
-	// Invalid input
+	// Invalid inputs
 	_25LCXXXX_ASSERT( 0UL == size);
+	_25LCXXXX_ASSERT( addr <= _25LCXXXX_MAX_ADDR );
 
 	// Check address boundary
 	if (( addr + size ) <= _25LCXXXX_MAX_ADDR )
@@ -245,15 +255,44 @@ static _25lcxxxx_status_t _25lcxxxx_write_status(const _25lcxxxx_status_reg_t * 
 	return status;
 }
 
-static uint32_t _25lcxxxx_get_number_of_sectors(const uint32_t addr, const uint32_t size)
+static uint32_t _25lcxxxx_calc_num_of_sectors(const uint32_t addr, const uint32_t size)
 {
 	uint32_t sector_num = 0UL;
+	uint32_t k_a 		= 0UL;
+	uint32_t k_s		= 0UL;
 
+	// Calculate address & size factors of sector size
+	k_a = (uint32_t) ( addr / _25LCXXXX_CFG_PAGE_SIZE_BYTE );
+	k_s = (uint32_t) (( addr + size ) / _25LCXXXX_CFG_PAGE_SIZE_BYTE );
 
+	// Based on address & size factors number of sectors can be calculated
+	sector_num = ( k_s - k_a ) + 1UL;
 
 	return sector_num;
 }
 
+static uint32_t _25lcxxxx_calc_transfer_size(const uint32_t addr, const uint32_t size)
+{
+	uint32_t bytes_to_transfer 	= 0UL;
+	uint32_t bytes_in_sector 	= 0UL;
+
+	// Calculate how many bytes till page boundary
+	bytes_in_sector = _25LCXXXX_CFG_PAGE_SIZE_BYTE - ( addr % _25LCXXXX_CFG_PAGE_SIZE_BYTE );
+
+	// Bytes will not pass page boundary
+	if ( size < bytes_in_sector )
+	{
+		bytes_to_transfer = size;
+	}
+
+	// Bytes will pass page boundary - limit to boundary
+	else
+	{
+		bytes_to_transfer = size;
+	}
+
+	return bytes_to_transfer;
+}
 
 
 
