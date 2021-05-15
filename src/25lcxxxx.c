@@ -491,12 +491,12 @@ static bool _25lcxxxx_read_wel_flag(void)
 
 static _25lcxxxx_status_t _25lcxxxx_wait_for_write_process(const uint32_t timeout)
 {
-			_25lcxxxx_status_t 	status 		= e25LCXXXX_OK;
-	static 	uint32_t			tick_prev	= 0UL;
-			uint32_t			tick		= 0UL;
-			uint32_t 			safe_cnt	= 1000000UL;
-			bool				wip_flag	= false;
-			uint8_t				timeout_cnt = 0U;
+	_25lcxxxx_status_t 	status 		= e25LCXXXX_OK;
+	uint32_t			tick_prev	= 0UL;
+	uint32_t			tick		= 0UL;
+	uint32_t 			safe_cnt	= 1000000UL;
+	bool				wip_flag	= false;
+	uint8_t				timeout_cnt = 0U;
 
 	// Read WIP flag
 	wip_flag = _25lcxxxx_read_wip_flag();
