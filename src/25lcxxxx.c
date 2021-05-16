@@ -23,7 +23,6 @@
 #include "../../25lcxxxx_if.h"
 #include "../../25lcxxxx_cfg.h"
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -264,8 +263,13 @@ _25lcxxxx_status_t _25lcxxxx_read(const uint32_t addr, const uint32_t size, uint
 */
 ////////////////////////////////////////////////////////////////////////////////
 
-
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Enable write latch
+*
+* @return 		status 	- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 static _25lcxxxx_status_t _25lcxxxx_write_enable(void)
 {
 	_25lcxxxx_status_t 		status 	= e25LCXXXX_OK;
@@ -276,7 +280,13 @@ static _25lcxxxx_status_t _25lcxxxx_write_enable(void)
 	return status;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Disable write latch
+*
+* @return 		status 	- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 static _25lcxxxx_status_t _25lcxxxx_write_disable(void)
 {
 	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
@@ -287,7 +297,14 @@ static _25lcxxxx_status_t _25lcxxxx_write_disable(void)
 	return status;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Read status register from device
+*
+* @param[out]	p_status_reg	- Pointer to status register
+* @return 		status 			- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 static _25lcxxxx_status_t _25lcxxxx_read_status(_25lcxxxx_status_reg_t * const p_status_reg)
 {
 	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
@@ -299,6 +316,14 @@ static _25lcxxxx_status_t _25lcxxxx_read_status(_25lcxxxx_status_reg_t * const p
 	return status;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Write to device status register
+*
+* @param[in]	p_status_reg	- Pointer to status register
+* @return 		status 			- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 static _25lcxxxx_status_t _25lcxxxx_write_status(const _25lcxxxx_status_reg_t * const p_status_reg)
 {
 	_25lcxxxx_status_t 		status 	= e25LCXXXX_OK;
@@ -310,6 +335,19 @@ static _25lcxxxx_status_t _25lcxxxx_write_status(const _25lcxxxx_status_reg_t * 
 	return status;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Calculate number of sectors
+*
+*	This function calculates how many pages consumes area with a
+*	start of address and with a size of size argument. It is being
+*	used in write function.
+*
+* @param[in]	addr		- Start address of area
+* @param[in]	size		- Size of area
+* @return 		sector_num	- Number of sectors in that area
+*/
+////////////////////////////////////////////////////////////////////////////////
 static uint32_t _25lcxxxx_calc_num_of_sectors(const uint32_t addr, const uint32_t size)
 {
 	uint32_t sector_num = 0UL;
@@ -326,6 +364,19 @@ static uint32_t _25lcxxxx_calc_num_of_sectors(const uint32_t addr, const uint32_
 	return sector_num;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Calculate transfer size of data in bytes
+*
+*	This function caclulated based on address and size how many bytes are
+*	in current page. In other words what amount of bytes can be written until
+*	page boundary is hit. It is being used for write function.
+*
+* @param[in]	addr	- Start address
+* @param[in]	size	- Size of bytes
+* @return 		status 	- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 static uint32_t _25lcxxxx_calc_transfer_size(const uint32_t addr, const uint32_t size)
 {
 	uint32_t bytes_to_transfer 	= 0UL;
@@ -349,9 +400,18 @@ static uint32_t _25lcxxxx_calc_transfer_size(const uint32_t addr, const uint32_t
 	return bytes_to_transfer;
 }
 
-
-
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Assemble read/write command
+*
+* @note For know this function has been tested only on 25LC640 device!
+*
+* @param[out]	p_frame		- Pointer to cmd frame
+* @param[in]	rw_cmd		- Device command for read or write
+* @param[in]	addr		- Start address of read or write
+* @return 		void
+*/
+////////////////////////////////////////////////////////////////////////////////
 static void _25lcxxxx_assemble_rw_cmd(_25lcxxxx_rw_cmd_t * const p_frame, const _25lcxxxx_isa_t rw_cmd, const uint32_t addr)
 {
 	_25LCXXXX_ASSERT( NULL != p_frame );
@@ -373,7 +433,19 @@ static void _25lcxxxx_assemble_rw_cmd(_25lcxxxx_rw_cmd_t * const p_frame, const 
 	#endif
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Send write command to device
+*
+*	This function first check if writing to device is allowed by looking into
+*	Write-In-Progress (WIP) flag in status register. Only when this flag is
+*	cleared in less that "_25LCXXXX_WAIT_WRITE_TIMEOUT_MS" command for
+*	write is being send.
+*
+* @param[in]	addr		- Start address of write transfer
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 static _25lcxxxx_status_t _25lcxxxx_write_command(const uint32_t addr)
 {
 	_25lcxxxx_status_t 	status 	= e25LCXXXX_OK;
@@ -421,12 +493,23 @@ static _25lcxxxx_status_t _25lcxxxx_write_command(const uint32_t addr)
 	return status;
 }
 
-
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Send read command to device
+*
+* 	@note	Before reading from device it is important to check for
+* 			Write-In-Progress (WIP) flag in status register.
+*
+* @param[in]	addr		- Start address of write transfer
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 static _25lcxxxx_status_t _25lcxxxx_read_command(const uint32_t addr)
 {
 	_25lcxxxx_status_t 		status 	= e25LCXXXX_OK;
 	_25lcxxxx_rw_cmd_t		cmd		= { .u = 0 };
+
+	// TODO: CHeck that WIP before reading....
 
 	// Assemble command
 	_25lcxxxx_assemble_rw_cmd( &cmd, e25LCXXXX_ISA_READ, addr );
@@ -461,7 +544,13 @@ static _25lcxxxx_status_t _25lcxxxx_read_command(const uint32_t addr)
 	return status;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Read WIP flag from device
+*
+* @return 		wip - State of Write-In-Progress
+*/
+////////////////////////////////////////////////////////////////////////////////
 static bool _25lcxxxx_read_wip_flag(void)
 {
 	bool 					wip 		= false;
@@ -475,7 +564,13 @@ static bool _25lcxxxx_read_wip_flag(void)
 	return wip;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Read WEL flag from device
+*
+* @return 		wel - State of Write-Enable-Latch
+*/
+////////////////////////////////////////////////////////////////////////////////
 static bool _25lcxxxx_read_wel_flag(void)
 {
 	bool wel = false;
@@ -489,6 +584,17 @@ static bool _25lcxxxx_read_wel_flag(void)
 	return wel;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Wait for device to write to internal memory array
+*
+*	This function blocks for maximum time of timeout and continuously check
+*	for WIP flag every 1ms.
+*
+* @param[in]	timeout 	- Timeout in miliseconds
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
 static _25lcxxxx_status_t _25lcxxxx_wait_for_write_process(const uint32_t timeout)
 {
 	_25lcxxxx_status_t 	status 		= e25LCXXXX_OK;
@@ -544,61 +650,6 @@ static _25lcxxxx_status_t _25lcxxxx_wait_for_write_process(const uint32_t timeou
 
 	return status;
 }
-
-// TODO: Remove only testing
-
-static _25lcxxxx_status_reg_t g_status_reg = { .u = 0 };
-
-void _25lcxxxx_hndl_test(void)
-{
-	static uint32_t cnt = 0;
-
-	switch (cnt)
-	{
-		case 0:
-			cnt++;
-
-			_25lcxxxx_read_status( &g_status_reg );
-
-			break;
-
-		case 1:
-			cnt++;
-
-			_25lcxxxx_write_enable();
-			break;
-
-		case 2:
-			cnt++;
-
-			_25lcxxxx_read_status( &g_status_reg );
-
-			break;
-
-		case 3:
-			cnt++;
-
-			_25lcxxxx_write_disable();
-			break;
-
-		case 4:
-			cnt ++;
-
-			_25lcxxxx_read_status( &g_status_reg );
-
-			break;
-
-		case 5:
-			cnt = 0;
-			break;
-
-		default:
-			break;
-	}
-
-
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
