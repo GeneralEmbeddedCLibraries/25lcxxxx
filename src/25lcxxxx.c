@@ -250,6 +250,35 @@ _25lcxxxx_status_t _25lcxxxx_read(const uint32_t addr, const uint32_t size, uint
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
+*		Set protection
+*
+* @pre	Chip WP pin must be set to low (0V) in order for protection to be
+* 		enabled in first place. If that condition is not fullfiled device
+* 		will not be write protected.
+*
+* @param[in]	prot_opt	- Protection options
+* @return 		status 		- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+_25lcxxxx_status_t _25lcxxxx_set_protection(const _25lcxxxx_protect_t prot_opt)
+{
+	_25lcxxxx_status_t 		status 		= e25LCXXXX_OK;
+	_25lcxxxx_status_reg_t	stat_reg	= { .u = 0 };
+
+	// Check for init
+	_25LCXXXX_ASSERT( true == gb_is_init );
+
+	// Set protection level
+	stat_reg.b.bp = prot_opt;
+
+	// Write to device
+	status = _25lcxxxx_write_status( &stat_reg );
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
 * @} <!-- END GROUP -->
 */
 ////////////////////////////////////////////////////////////////////////////////
@@ -508,8 +537,6 @@ static _25lcxxxx_status_t _25lcxxxx_read_command(const uint32_t addr)
 {
 	_25lcxxxx_status_t 		status 	= e25LCXXXX_OK;
 	_25lcxxxx_rw_cmd_t		cmd		= { .u = 0 };
-
-	// TODO: CHeck that WIP before reading....
 
 	// Assemble command
 	_25lcxxxx_assemble_rw_cmd( &cmd, e25LCXXXX_ISA_READ, addr );

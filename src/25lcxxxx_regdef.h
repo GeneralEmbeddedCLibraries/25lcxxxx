@@ -66,16 +66,4 @@ typedef union
 	_25lcxxxx_status_reg_bits_t b;	/**<Bitfield access */
 } _25lcxxxx_status_reg_t;
 
-/**
- * 	Write protection options
- */
-typedef enum
-{
-	e25LCXXXX_PROTECT_NONE = 0,		/**<All sectors not protected */
-	e25LCXXXX_PROTECT_UPPER_1_4,	/**<Upper 1/4 sectors protected (Sector 3)*/
-	e25LCXXXX_PROTECT_UPPER_1_2,	/**<Upper 1/2 sectors protected (Sector 2 & 3)*/
-	e25LCXXXX_PROTECT_UPPER_ALL,	/**<All sectors protected (Sector 0, 1, 2 & 3)*/
-} _25lcxxxx_protect_t;
-
-
 #endif // _25LCXXXX_REGDEF_H_
