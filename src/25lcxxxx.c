@@ -93,6 +93,9 @@ _25lcxxxx_status_t _25lcxxxx_init(void)
 	_25lcxxxx_status_t 	status 		= e25LCXXXX_OK;
 	bool				wel_flag	= false;
 
+	// Check for init
+	_25LCXXXX_ASSERT( false == gb_is_init );
+
 	// Initialize app interface
 	status = _25lcxxxx_if_init();
 
@@ -125,6 +128,9 @@ _25lcxxxx_status_t _25lcxxxx_deinit	(void)
 {
 	_25lcxxxx_status_t 		status 		= e25LCXXXX_OK;
 	_25lcxxxx_status_reg_t	stat_reg	= { .u = 0 };
+
+	// Check for init
+	_25LCXXXX_ASSERT( true == gb_is_init );
 
 	// Disable write latch
 	status |= _25lcxxxx_write_disable();
