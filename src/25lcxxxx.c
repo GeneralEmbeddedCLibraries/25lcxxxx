@@ -8,7 +8,7 @@
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*@addtogroup 25LCXXXX_API
+*@addtogroup _25LCXXXX_API
 * @{ <!-- BEGIN GROUP -->
 *
 * 	API functions for EEPROM device
@@ -297,7 +297,7 @@ _25lcxxxx_status_t _25lcxxxx_set_protection(const _25lcxxxx_protect_t prot_opt)
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*@addtogroup 25LCxxxx/25AAxxx
+*@addtogroup KERNEL_FUNCTIONS
 * @{ <!-- BEGIN GROUP -->
 *
 * 	Kernel functions of SPI EEPROM device 25LCxxxx/25AAxxxx

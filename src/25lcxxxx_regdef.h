@@ -8,7 +8,7 @@
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
-*@addtogroup 25LCXXXX_REGEDEF
+*@addtogroup _25LCXXXX_REGEDEF
 * @{ <!-- BEGIN GROUP -->
 *
 * 	Register definitions of 25LCXXXX.
