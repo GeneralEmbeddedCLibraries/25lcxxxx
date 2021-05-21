@@ -108,10 +108,10 @@ Functions to adopt for used plaftorm are:
                 if ( cs_action & eSPI_CS_HIGH_ON_EXIT )
                 {
                     gpio_set( g_spi2_cs_pins[ch], eGPIO_HIGH );
+                
+                    // Release mutex
+                    osMutexRelease( g_spi2_mutex_id );
                 }
-
-                // Release mutex
-                osMutexRelease( g_spi2_mutex_id );
             }
         }
         else
