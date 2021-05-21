@@ -146,6 +146,18 @@ _25lcxxxx_status_t _25lcxxxx_deinit	(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 /**
+*		Is device initialized
+*
+* @return 	gb_is_init - Global initialization flag
+*/
+////////////////////////////////////////////////////////////////////////////////
+const bool _25lcxxxx_is_init(void)
+{
+	return (const bool) gb_is_init;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
 *		Write byte(s) to EEPROM
 *
 * @note		Need to be check for page boundary unless it wrap around!
@@ -169,7 +181,7 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 
 	// Invalid inputs
 	_25LCXXXX_ASSERT( size > 0 );
-	_25LCXXXX_ASSERT(( addr + size ) <= _25LCXXXX_MAX_ADDR );
+	_25LCXXXX_ASSERT(( addr + size - 1 ) <= _25LCXXXX_MAX_ADDR );
 
 	// Calculate how many sectors takes write request
 	const uint32_t num_of_sectors = _25lcxxxx_calc_num_of_sectors( addr, size );
@@ -225,7 +237,7 @@ _25lcxxxx_status_t _25lcxxxx_read(const uint32_t addr, const uint32_t size, uint
 
 	// Invalid inputs
 	_25LCXXXX_ASSERT( size > 0 );
-	_25LCXXXX_ASSERT(( addr + size ) <= _25LCXXXX_MAX_ADDR );
+	_25LCXXXX_ASSERT(( addr + size - 1 ) <= _25LCXXXX_MAX_ADDR );
 
 	// Get WIP flag
 	// NOTE: Reading not possible when write in progress!

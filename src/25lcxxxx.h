@@ -54,6 +54,7 @@ typedef enum
 ////////////////////////////////////////////////////////////////////////////////
 _25lcxxxx_status_t _25lcxxxx_init			(void);
 _25lcxxxx_status_t _25lcxxxx_deinit			(void);
+const bool		   _25lcxxxx_is_init		(void);
 _25lcxxxx_status_t _25lcxxxx_write			(const uint32_t addr, const uint32_t size, const uint8_t * const p_data);
 _25lcxxxx_status_t _25lcxxxx_read			(const uint32_t addr, const uint32_t size, uint8_t * const p_data);
 _25lcxxxx_status_t _25lcxxxx_set_protection	(const _25lcxxxx_protect_t prot_opt);

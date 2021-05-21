@@ -49,7 +49,7 @@
  * 	@note	User can obtain information about number of address bits
  * 			in Table 2-2 of DS22040A in Microchip document
  */
-#define _25LCXXXX_CFG_ADDR_BIT_NUM			( 12 )
+#define _25LCXXXX_CFG_ADDR_BIT_NUM			( 13 )
 
 /**
  * 	Device page size
@@ -64,7 +64,6 @@
  * 	Unit: bytes
  */
 #define _25LCXXXX_CFG_PAGE_SIZE_BYTE		( 32 )
-
 
 
 
