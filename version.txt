@@ -1,11 +1,26 @@
-//============================================================
-// Version 1.0.0 (21.05.2021)
-//============================================================
-// Brief:
-//	- Initial implementation of 25LCxxxx/25AAxxxx driver
-// 
-//  Features:
-//   - Write bytes to EEPROM
-//   - Read bytes from EEPROM
-//   - Set write protection
-//============================================================
+============================================================
+ Version 1.0.1 (05.06.2021)
+============================================================
+ Brief:
+	- Added erase functionality
+	- Added versioning macro definitions
+ 
+  Features:
+   
+   
+  Todo:
+  
+============================================================
+
+
+============================================================
+ Version 1.0.0 (21.05.2021)
+============================================================
+ Brief:
+	- Initial implementation of 25LCxxxx/25AAxxxx driver
+ 
+  Features:
+   - Write bytes to EEPROM
+   - Read bytes from EEPROM
+   - Set write protection
+============================================================
