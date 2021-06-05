@@ -4,7 +4,7 @@
 *@brief    	API for 25LCxxxx EEPROM device
 *@author    Ziga Miklosic
 *@date      08.05.2021
-*@version	V1.0.0
+*@version	V1.0.1
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**

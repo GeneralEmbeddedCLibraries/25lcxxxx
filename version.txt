@@ -3,7 +3,7 @@
 ============================================================
  Brief:
 	- Added erase functionality
-	- Added versioning macro definitions
+	- Added version macro definitions
  
   Features:
    
