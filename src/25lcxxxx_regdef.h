@@ -4,7 +4,7 @@
 *@brief     Register description of 25LCxxxx devices
 *@author    Ziga Miklosic
 *@date      08.05.2021
-*@version	V1.0.0
+*@version	V1.0.1
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**

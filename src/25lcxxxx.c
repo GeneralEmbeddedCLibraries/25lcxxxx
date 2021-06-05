@@ -4,7 +4,7 @@
 *@brief     API for 25LCxxxx EEPROM device
 *@author    Ziga Miklosic
 *@date      08.05.2021
-*@version	V1.0.0
+*@version	V1.0.1
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -38,6 +38,11 @@
  * 	Unit: miliseconds
  */
 #define _25LCXXXX_WAIT_WRITE_TIMEOUT_MS		( 5UL )
+
+/**
+ * 	Erase value
+ */
+#define _25LCXXX_ERASE_VALUE				((uint8_t)( 0xFFU ))
 
 /**
  * 	Read/Write memory command
@@ -219,6 +224,40 @@ _25lcxxxx_status_t _25lcxxxx_write(const uint32_t addr, const uint32_t size, con
 
 	// All bytes shall be transfered
 	_25LCXXXX_ASSERT( 0UL == working_size );
+
+	return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/**
+*		Erase byte(s) from EEPROM
+*
+* @brief	This function erase number of bytes from eeprom device starting
+* 			from addr parameter. Erase value is defined by "_25LCXXX_ERASE_VALUE"
+* 			macro.
+*
+*
+* @param[in]	addr	- Start address of write
+* @param[in]	size	- Size of bytes to write
+* @return 		status 	- Status of operation
+*/
+////////////////////////////////////////////////////////////////////////////////
+_25lcxxxx_status_t _25lcxxxx_erase(const uint32_t addr, const uint32_t size)
+{
+	_25lcxxxx_status_t 	status		 	= e25LCXXXX_OK;
+	uint8_t				erase_data[32] 	= { 0 };
+
+	_25LCXXXX_ASSERT( true == gb_is_init );
+	_25LCXXXX_ASSERT( size < 32 );
+
+	// Prepare erase data
+	for ( uint8_t i = 0; i < 32; i++ )
+	{
+		erase_data[i] = _25LCXXX_ERASE_VALUE;
+	}
+
+	// Erase memory
+	status = _25lcxxxx_write( addr, size, (uint8_t*) erase_data );
 
 	return status;
 }
