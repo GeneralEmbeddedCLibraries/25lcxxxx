@@ -70,4 +70,9 @@ _25lcxxxx_status_t _25lcxxxx_erase			(const uint32_t addr, const uint32_t size);
 _25lcxxxx_status_t _25lcxxxx_read			(const uint32_t addr, const uint32_t size, uint8_t * const p_data);
 _25lcxxxx_status_t _25lcxxxx_set_protection	(const _25lcxxxx_protect_t prot_opt);
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+* @} <!-- END GROUP -->
+*/
+////////////////////////////////////////////////////////////////////////////////
 #endif // _25LCXXXX_H_
