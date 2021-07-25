@@ -1,10 +1,13 @@
+// Copyright (c) 2021 Ziga Miklosic
+// All Rights Reserved
+// This software is under MIT licence (https://opensource.org/licenses/MIT)
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *@file      25lcxxxx_regdef.h
 *@brief     Register description of 25LCxxxx devices
 *@author    Ziga Miklosic
 *@date      08.05.2021
-*@version	V1.0.1
+*@version	V1.0.2
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
@@ -66,4 +69,9 @@ typedef union
 	_25lcxxxx_status_reg_bits_t b;	/**<Bitfield access */
 } _25lcxxxx_status_reg_t;
 
+////////////////////////////////////////////////////////////////////////////////
+/**
+* @} <!-- END GROUP -->
+*/
+////////////////////////////////////////////////////////////////////////////////
 #endif // _25LCXXXX_REGDEF_H_

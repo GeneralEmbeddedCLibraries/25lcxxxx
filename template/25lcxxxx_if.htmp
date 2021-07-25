@@ -1,10 +1,13 @@
+// Copyright (c) 2021 Ziga Miklosic
+// All Rights Reserved
+// This software is under MIT licence (https://opensource.org/licenses/MIT)
 ////////////////////////////////////////////////////////////////////////////////
 /**
 *@file      25lcxxxx_if.h
 *@brief     Application interface for 25LCxxxx EEPROM device
 *@author    Ziga Miklosic
 *@date      08.05.2021
-*@version	V1.0.1
+*@version	V1.0.2
 */
 ////////////////////////////////////////////////////////////////////////////////
 /**
