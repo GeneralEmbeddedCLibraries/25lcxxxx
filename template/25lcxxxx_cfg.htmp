@@ -34,13 +34,27 @@
 
 /**
  * 	Enable/Disable debug mode
+ *
+ * 	@note Disable debug in release
  */
 #define _25LCXXXX_CFG_DEBUG_EN				( 1 )
 
+#ifndef DEBUG
+	#undef _25LCXXXX_CFG_DEBUG_EN
+	#define _25LCXXXX_CFG_DEBUG_EN 	( 0 )
+#endif
+
 /**
  * 	Enable/Disable assertions
+ *
+ * 	@note Disable assert in release
  */
 #define _25LCXXXX_CFG_ASSERT_EN				( 1 )
+
+#ifndef DEBUG
+	#undef _25LCXXXX_CFG_ASSERT_EN
+	#define _25LCXXXX_CFG_ASSERT_EN 	( 0 )
+#endif
 
 /**
  * 	Device number address bits
@@ -82,7 +96,7 @@
  * 	Debug communication port macros
  */
 #if ( 1 == _25LCXXXX_CFG_DEBUG_EN )
-	#define _25LCXXXX_DBG_PRINT( ... )					( com_dbg_print( eCOM_DBG_CH_ERR, (const char*) __VA_ARGS__ ))
+	#define _25LCXXXX_DBG_PRINT( ... )					( com_dbg_print( eCOM_DBG_CH_NONE, (const char*) __VA_ARGS__ ))
 #else
 	#define _25LCXXXX_DBG_PRINT( ... )					{ ; }
 
