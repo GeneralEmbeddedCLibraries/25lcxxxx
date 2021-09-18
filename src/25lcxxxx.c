@@ -102,25 +102,28 @@ _25lcxxxx_status_t _25lcxxxx_init(void)
 	bool				wel_flag	= false;
 
 	// Check for init
-	_25LCXXXX_ASSERT( false == gb_is_init );
+	//_25LCXXXX_ASSERT( false == gb_is_init );
 
-	// Initialize app interface
-	status = _25lcxxxx_if_init();
-
-	// Enable write latch
-	status |= _25lcxxxx_write_enable();
-
-	// Read WEL flag
-	wel_flag = _25lcxxxx_read_wel_flag();
-
-	if (	( e25LCXXXX_OK == status )
-		&& 	( true == wel_flag ))
+	if ( false == gb_is_init )
 	{
-		gb_is_init = true;
-	}
+		// Initialize app interface
+		status = _25lcxxxx_if_init();
 
-	_25LCXXXX_ASSERT( e25LCXXXX_OK == status );
-	_25LCXXXX_ASSERT( true == gb_is_init );
+		// Enable write latch
+		status |= _25lcxxxx_write_enable();
+
+		// Read WEL flag
+		wel_flag = _25lcxxxx_read_wel_flag();
+
+		if (	( e25LCXXXX_OK == status )
+			&& 	( true == wel_flag ))
+		{
+			gb_is_init = true;
+		}
+
+		_25LCXXXX_ASSERT( e25LCXXXX_OK == status );
+		_25LCXXXX_ASSERT( true == gb_is_init );
+	}
 
 	return status;
 }
