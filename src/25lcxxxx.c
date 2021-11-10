@@ -114,6 +114,7 @@ _25lcxxxx_status_t _25lcxxxx_init(void)
 
 		// Read WEL flag
 		wel_flag = _25lcxxxx_read_wel_flag();
+	}
 
 	_25LCXXXX_ASSERT( false == gb_is_init );
 
